@@ -91,9 +91,32 @@ The result is shown in the frontend as a list of matching positions, grouped by 
 
 ## 🏗️ Design & Decisions
 
-### 1. **Chunked Storage**
-- Each nucleotide sequence is divided into **5MB chunks** and stored in PostgreSQL.
-- Reduces memory load and improves read/write performance for large sequences.
+### 1. **Chunked Storage (PostgreSQL)**
+
+Each nucleotide sequence is divided into **5MB chunks** and stored as rows in the `NucleotideChunk` model in PostgreSQL.
+
+#### ✅ Benefits:
+- **Efficient Memory Use**: By streaming and writing data in chunks, we avoid loading large files entirely into memory.
+- **Parallel Processing**: Chunks can be distributed across Celery tasks for regex searches.
+- **Simple Querying**: SQL queries can retrieve and process parts of sequences without file system complexity.
+
+#### 🆚 Alternatives and Comparison
+
+| Method                        | Pros                                              | Cons                                                  |
+|------------------------------|---------------------------------------------------|-------------------------------------------------------|
+| **PostgreSQL Chunked (Current)** | Easy to query, transactional, supports parallelism | Potentially slower I/O vs filesystem for large reads |
+| **Save to Disk (e.g., `.fasta` file)** | Very fast read/write for large files             | Harder to manage metadata and parallel search        |
+| **PostgreSQL BYTEA (Binary)**       | Compact binary storage inside DB                 | Harder to index or split, memory-intensive on decode |
+| **PostgreSQL Large Objects (LOB)** | Optimized for very large binary data             | More complex API, poor random access per chunk       |
+| **Cloud Blob Storage (e.g., S3)**   | Scalable and cost-efficient for huge data        | Requires external infrastructure and authentication  |
+
+#### 🔍 Why Chunked in PostgreSQL?
+
+- ✅ Integrated with Django ORM — no additional tooling needed.
+- ✅ Indexable by `sequence_id` and `chunk_index`.
+- ✅ Easily extendable — you can add metadata, tags, versioning.
+- ❗ Consider switching to LOB or disk-based storage if dealing with **>1GB genomic data** or very high-throughput environments.
+
 
 ### 2. **Celery + Chord Pattern**
 - Each chunk is searched concurrently via `search_chunk_task`.
@@ -196,75 +219,7 @@ GET /api/get/<task_id>/
 | ✅ Sequence metadata storage   | Store headers and source info                       |
 | ✅ Background cron job         | Auto-clean expired Redis cache or old DB entries    |
 
----
 
-## 👨‍💻 Author
-
-**Taixing Bi**  
-📅 5.11.2025  
-🔬 Simons Foundation (Project Header)  
-📧 taixingbijob@gmail.com
-
----
-
-## 📄 License
-
-MIT License---
-
-## 🔄 Frontend ⇄ Backend Communication
-
-### 📤 Step 1: Submitting a Search Task
-
-- **Frontend (React)** sends a `POST` request to `/api/post/`:
-  ```json
-  {
-    "id": "30271926",
-    "pattern": "GGCAT"
-  }
-  ```
-- **Backend (Django)** receives this request, starts an asynchronous job using `Celery chord`, and returns a `task_id` immediately:
-  ```json
-  {
-    "task_id": "abc1234...",
-    "message": "Chained tasks started. You can poll the result using the task_id."
-  }
-  ```
-
-### 🤖 Why use POST?
-- Because the action initiates **a process with side effects** — it triggers backend logic, stores data, and starts asynchronous jobs, which makes `POST` semantically correct over `GET`.
-
----
-
-### 🔁 Step 2: Polling for Results
-
-- The **React app** sets a timer and repeatedly makes `GET` requests to `/api/get/<task_id>/` every second:
-  ```http
-  GET /api/get/abc1234/
-  ```
-- The **Django backend** checks:
-  - If the task is completed, it returns the result.
-  - If not ready, it keeps returning `PENDING`.
-
-### 🔍 Why use polling instead of WebSocket?
-- Simplicity: Polling is easier to implement and doesn't require persistent WebSocket connections.
-- Reliability: Works even when real-time infrastructure isn't available.
-- But it has drawbacks:
-  - Delay in result delivery.
-  - Inefficient for long-running tasks.
-
-### 📥 Response from Backend when Ready:
-```json
-{
-  "task_id": "abc1234",
-  "status": "SUCCESS",
-  "is_ready": true,
-  "result": {
-    "GGCAT": [543, 672, 1572, ...]
-  }
-}
-```
-
-The result is shown in the frontend as a list of matching positions, grouped by pattern.
 ---
 
 ## 🧪 Task 2: Command-Line Utility for Large Sequence Search
