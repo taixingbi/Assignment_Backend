@@ -1,4 +1,4 @@
-![Architecture](architecture.png)
+[▶️ Click to download and view show.mov](show.mov)
 
 # 🧬 Nucleotide Pattern Search Platform
 
@@ -62,6 +62,7 @@ This project is a web-based tool to fetch large-scale nucleotide sequences from 
 The result is shown in the frontend as a list of matching positions, grouped by pattern.
 
 ## 📐 Architecture Overview
+![Architecture](architecture.png)
 
 ```
 [React Frontend] ──▶ [Django REST API] ──▶ [Celery Task Queue]
