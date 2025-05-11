@@ -1,4 +1,4 @@
-[▶️ Click to download and view show.mov](show.mov)
+[▶️ Click to download and view esult_show.mov](result_show.mov)
 
 # 🧬 Nucleotide Pattern Search Platform
 
