@@ -61,6 +61,9 @@ This project is a web-based tool to fetch large-scale nucleotide sequences from 
 
 The result is shown in the frontend as a list of matching positions, grouped by pattern.
 
+![GET](frontend1.png)
+![react](frontend2.png)
+
 ## 📐 Architecture Overview
 ![Architecture](architecture.png)
 
