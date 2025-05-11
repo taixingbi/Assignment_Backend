@@ -32,6 +32,8 @@ This project is a web-based tool to fetch large-scale nucleotide sequences from 
 
 ### 🔁 Step 2: Polling for Results
 
+![GET](frontend1.png)
+
 - The **React app** sets a timer and repeatedly makes `GET` requests to `/api/get/<task_id>/` every second:
   ```http
   GET /api/get/abc1234/
@@ -61,7 +63,6 @@ This project is a web-based tool to fetch large-scale nucleotide sequences from 
 
 The result is shown in the frontend as a list of matching positions, grouped by pattern.
 
-![GET](frontend1.png)
 ![react](frontend2.png)
 
 ## 📐 Architecture Overview
